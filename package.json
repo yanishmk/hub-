@@ -1,0 +1,39 @@
+{
+  "name": "cluster-pos-hub",
+  "version": "0.1.0",
+  "description": "Hub central de commandes (Uber Eats / DoorDash / Skip / Site web) vers Cluster POS",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "worker": "tsx watch src/queue/worker.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "bullmq": "^5.13.2",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "ioredis": "^5.4.1",
+    "pino-pretty": "^11.2.2",
+    "prisma": "^5.20.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.15",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  },
+  "prisma": {
+    "schema": "src/db/schema.prisma"
+  }
+}

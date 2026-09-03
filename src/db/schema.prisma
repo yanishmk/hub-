@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderSource {
+  ubereats
+  doordash
+  skip
+  website
+}
+
+enum OrderStatus {
+  received
+  sent_to_pos
+  confirmed
+  preparing
+  ready
+  error
+  cancelled
+}
+
+// Une commande normalisée, telle que reçue par le hub.
+// L'unicité (source, externalId) est la garde d'idempotence: un même
+// webhook reçu plusieurs fois ne doit jamais créer 2 lignes.
+model Order {
+  id             String      @id @default(cuid())
+  externalId     String
+  source         OrderSource
+  status         OrderStatus @default(received)
+  orderType      String
+  requestedFor   DateTime?
+  customerName   String
+  customerPhone  String?
+  subtotal       Decimal     @db.Decimal(10, 2)
+  tax            Decimal     @db.Decimal(10, 2)
+  deliveryFee    Decimal?    @db.Decimal(10, 2)
+  tip            Decimal?    @db.Decimal(10, 2)
+  total          Decimal     @db.Decimal(10, 2)
+  paymentStatus  String
+  items          Json
+  rawSourcePayload Json
+  clusterOrderRef  String?
+  lastError        String?
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  events         OrderEvent[]
+  clusterAttempts ClusterDeliveryAttempt[]
+
+  @@unique([source, externalId])
+  @@index([status])
+}
+
+// Journal d'événements du cycle de vie d'une commande (audit/debug).
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  type      String
+  message   String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// Historique des tentatives d'envoi vers l'API Cluster POS (pour debug des retries).
+model ClusterDeliveryAttempt {
+  id           String   @id @default(cuid())
+  orderId      String
+  attemptNumber Int
+  success      Boolean
+  statusCode   Int?
+  responseBody String?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
