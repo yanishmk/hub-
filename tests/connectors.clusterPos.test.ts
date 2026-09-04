@@ -111,6 +111,22 @@ describe("sendOrderToCluster", () => {
     expect(body.data.Cart.Note).toBe("COMMANDE UBER");
   });
 
+  it("includes item notes in the Cluster item payload", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ Invoice: 1002, Status: 200, Message: "" }), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendOrderToCluster({
+      ...sampleOrder,
+      items: [{ ...sampleOrder.items[0], notes: "TEST" }],
+    });
+
+    const [, options] = fetchMock.mock.calls[0];
+    const body = JSON.parse(options.body);
+    expect(body.data.Cart.Nodes[0].Database.Model.Note).toBe("TEST");
+  });
+
   it("throws ClusterPosError on a 4xx response", async () => {
     const fetchMock = vi
       .fn()

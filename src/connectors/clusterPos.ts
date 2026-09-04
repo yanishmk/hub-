@@ -85,7 +85,10 @@ export function buildClusterPayload(order: NormalizedOrder): Record<string, unkn
           // cette note pour que la cuisine sache quelle préparation faire.
           // Confirmé via calculate-order que le champ est accepté et conservé;
           // pas encore confirmé visuellement sur un ticket cuisine imprimé.
-          Note: /croustillante/i.test(item.name) ? "CROUSTILLANTE" : "",
+          Note: [
+            /croustillante/i.test(item.name) ? "CROUSTILLANTE" : "",
+            item.notes ?? "",
+          ].filter(Boolean).join(" - "),
         },
       },
     })),
