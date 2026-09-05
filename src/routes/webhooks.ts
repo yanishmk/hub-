@@ -12,6 +12,7 @@ import { isDoorDashEnabled } from "../ingestion/doordash.js";
 import { isSkipEnabled } from "../ingestion/skip.js";
 import { ubereatsToNormalizedOrder } from "../normalization/toNormalizedOrder.js";
 import { enqueueOrder } from "../queue/orderQueue.js";
+import { scheduleUberAcceptanceCheck } from "../queue/uberAcceptanceQueue.js";
 
 export async function registerWebhookRoutes(app: FastifyInstance) {
   app.post("/webhooks/ubereats", async (request, reply) => {
@@ -50,11 +51,13 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
 
     if (!accepted) {
       const orderId = getUberEatsOrderId(orderPayload);
-      app.log.info({ eventType, orderId }, "Uber Eats order ignored until it is accepted");
+      const watchJobId = await scheduleUberAcceptanceCheck(orderPayload);
+      app.log.info({ eventType, orderId, watchJobId }, "Uber Eats order waiting for manual acceptance");
       return reply.code(200).send({
-        status: "ignored",
-        reason: "order_not_accepted",
+        status: watchJobId ? "watching" : "ignored",
+        reason: watchJobId ? "waiting_for_manual_acceptance" : "order_not_accepted",
         orderId,
+        watchJobId,
       });
     }
 

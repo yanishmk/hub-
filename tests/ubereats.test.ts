@@ -8,6 +8,9 @@ process.env.UBEREATS_CLIENT_ID = "uber-client-id";
 process.env.UBEREATS_AUTH_URL = "https://auth.test/token";
 process.env.UBEREATS_API_BASE_URL = "https://api.test";
 process.env.UBEREATS_AUTO_ACCEPT = "false";
+process.env.UBEREATS_MANUAL_ACCEPT_POLL_ENABLED = "true";
+process.env.UBEREATS_MANUAL_ACCEPT_POLL_ATTEMPTS = "3";
+process.env.UBEREATS_MANUAL_ACCEPT_POLL_DELAY_MS = "10";
 
 const enqueueOrder = vi.fn(async () => ({ orderId: "order-db-1", duplicate: false }));
 
@@ -159,7 +162,7 @@ describe("Uber Eats ingestion", () => {
     await app.close();
   });
 
-  it("does not enqueue an Uber order until it is accepted", async () => {
+  it("watches an Uber order until it is accepted manually", async () => {
     const app = buildApp();
     const rawBody = JSON.stringify({
       ...uberOrderPayload,
@@ -182,9 +185,10 @@ describe("Uber Eats ingestion", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({
-      status: "ignored",
-      reason: "order_not_accepted",
+      status: "watching",
+      reason: "waiting_for_manual_acceptance",
       orderId: "uber-order-pending",
+      watchJobId: "ubereats_manual_acceptance__uber-order-pending",
     });
     expect(enqueueOrder).not.toHaveBeenCalled();
     await app.close();

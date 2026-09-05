@@ -42,6 +42,9 @@ const envSchema = z.object({
   UBEREATS_AUTH_URL: z.string().optional().default("https://auth.uber.com/oauth/v2/token"),
   UBEREATS_OAUTH_SCOPE: z.string().optional().default("eats.order"),
   UBEREATS_AUTO_ACCEPT: boolFromString,
+  UBEREATS_MANUAL_ACCEPT_POLL_ENABLED: boolFromStringDefaultTrue,
+  UBEREATS_MANUAL_ACCEPT_POLL_ATTEMPTS: z.coerce.number().int().positive().default(60),
+  UBEREATS_MANUAL_ACCEPT_POLL_DELAY_MS: z.coerce.number().int().positive().default(10_000),
 
   DOORDASH_ENABLED: boolFromString,
   DOORDASH_DEVELOPER_ID: z.string().optional().default(""),

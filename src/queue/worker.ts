@@ -4,6 +4,7 @@ import { ORDER_QUEUE_NAME, type SendToClusterJobData } from "./orderQueue.js";
 import { prisma } from "../lib/prisma.js";
 import { sendOrderToCluster, ClusterPosError } from "../connectors/clusterPos.js";
 import { dbOrderToNormalizedOrder } from "../normalization/dbOrder.js";
+import "./uberAcceptanceQueue.js";
 
 const BASE_BACKOFF_MS = 2000;
 const MAX_EXPONENTIAL_BACKOFF_MS = 30_000;
