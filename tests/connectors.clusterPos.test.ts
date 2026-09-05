@@ -53,6 +53,7 @@ describe("sendOrderToCluster", () => {
     const body = JSON.parse(options.body);
     expect(body.table_id).toBe(9994); // pickup
     expect(body.data.Client.Model.Fullname).toBe("Alice Tremblay");
+    expect(body.data.Cart.Note).toBe("COMMANDE CREPONE.CA");
     expect(body.data.Cart.Nodes[0].Database.Model.Item_uid).toBe(1075120545);
   });
 
@@ -111,9 +112,26 @@ describe("sendOrderToCluster", () => {
     expect(body.data.Cart.Note).toBe("COMMANDE UBER");
   });
 
-  it("includes item notes in the Cluster item payload", async () => {
+  it("uses a clean source message for online payments", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ Invoice: 1002, Status: 200, Message: "" }), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendOrderToCluster({
+      ...sampleOrder,
+      externalId: "stripe-order-123",
+      paymentStatus: "paid_externally",
+    });
+
+    const [, options] = fetchMock.mock.calls[0];
+    const body = JSON.parse(options.body);
+    expect(body.data.Cart.Payments[0].Model.Message).toBe("COMMANDE CREPONE.CA");
+  });
+
+  it("includes item notes in the Cluster item payload", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ Invoice: 1003, Status: 200, Message: "" }), { status: 200 })
     );
     vi.stubGlobal("fetch", fetchMock);
 

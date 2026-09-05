@@ -47,6 +47,10 @@ function toTableId(order: NormalizedOrder): number {
   }
 }
 
+function orderSourceNote(order: NormalizedOrder): string {
+  return order.source === "ubereats" ? "COMMANDE UBER" : "COMMANDE CREPONE.CA";
+}
+
 /**
  * Construit le corps de la requête envoyée à Cluster POS, au format réel
  * confirmé par la collection Postman officielle Cluster API v1.5 (send-order /
@@ -71,7 +75,7 @@ export function buildClusterPayload(order: NormalizedOrder): Record<string, unkn
   }
 
   const cart: Record<string, unknown> = {
-    Note: order.source === "ubereats" ? "COMMANDE UBER" : null,
+    Note: orderSourceNote(order),
     OverridePrices: true,
     Nodes: order.items.map((item) => ({
       Database: {
@@ -107,7 +111,7 @@ export function buildClusterPayload(order: NormalizedOrder): Record<string, unkn
           Payment: order.total,
           Tip: order.tip ?? 0,
           Balance: 0,
-          Message: order.externalId,
+          Message: orderSourceNote(order),
         },
       },
     ];
