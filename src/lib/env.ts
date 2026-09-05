@@ -7,10 +7,17 @@ const boolFromString = z
   .default("false")
   .transform((v) => v.toLowerCase() === "true");
 
+const boolFromStringDefaultTrue = z
+  .string()
+  .optional()
+  .default("true")
+  .transform((v) => v.toLowerCase() === "true");
+
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   HOST: z.string().default("0.0.0.0"),
   LOG_LEVEL: z.string().default("info"),
+  START_WORKER_IN_PROCESS: boolFromStringDefaultTrue,
 
   DATABASE_URL: z.string().default("postgresql://postgres:postgres@localhost:5432/cluster_pos_hub?schema=public"),
   REDIS_URL: z.string().default("redis://localhost:6379"),
