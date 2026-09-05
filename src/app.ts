@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { registerOrderRoutes } from "./routes/orders.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
 import { registerDashboardRoutes } from "./routes/dashboard.js";
+import { registerAnalyticsRoutes } from "./routes/analytics.js";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -41,6 +42,7 @@ export function buildApp(): FastifyInstance {
   app.register(registerOrderRoutes);
   app.register(registerWebhookRoutes);
   app.register(registerDashboardRoutes);
+  app.register(registerAnalyticsRoutes);
 
   return app;
 }
