@@ -30,8 +30,10 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
     const eventType = body && typeof body === "object"
       ? String((body as Record<string, unknown>).event_type ?? "")
       : "";
+    const webhookOrderId = getUberEatsOrderId(body);
+    app.log.info({ eventType, orderId: webhookOrderId }, "Uber Eats webhook received");
     if (eventType && !["orders.notification", "orders.scheduled.notification", "orders.release"].includes(eventType)) {
-      app.log.info({ eventType }, "Uber Eats webhook event ignored");
+      app.log.info({ eventType, orderId: webhookOrderId }, "Uber Eats webhook event ignored");
       return reply.code(200).send({ status: "ignored", eventType });
     }
 
@@ -40,6 +42,10 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
       : await fetchUberEatsOrder(body);
 
     let accepted = isUberEatsOrderAccepted(orderPayload, eventType);
+    app.log.info(
+      { eventType, orderId: getUberEatsOrderId(orderPayload) ?? webhookOrderId, accepted },
+      "Uber Eats order fetched"
+    );
     if (!accepted && env.UBEREATS_AUTO_ACCEPT) {
       const orderId = getUberEatsOrderId(orderPayload);
       if (!orderId) {
@@ -47,6 +53,7 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
       }
       await acceptUberEatsOrder(orderId);
       accepted = true;
+      app.log.info({ eventType, orderId }, "Uber Eats order auto-accepted");
     }
 
     if (!accepted) {
@@ -63,6 +70,10 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
 
     const normalized = ubereatsToNormalizedOrder(orderPayload);
     const result = await enqueueOrder(normalized);
+    app.log.info(
+      { eventType, orderId: result.orderId, externalId: normalized.externalId, duplicate: result.duplicate },
+      "Uber Eats order queued for Cluster POS"
+    );
 
     return reply.code(200).send({
       orderId: result.orderId,

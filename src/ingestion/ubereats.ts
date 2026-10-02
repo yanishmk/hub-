@@ -90,7 +90,7 @@ export function isUberEatsOrderAccepted(payload: unknown, eventType = ""): boole
 export async function fetchUberEatsOrder(payload: unknown): Promise<unknown> {
   const href = getUberEatsOrderHref(payload);
   const orderId = getUberEatsOrderId(payload);
-  const url = href || (orderId ? `${env.UBEREATS_API_BASE_URL}/v1/eats/orders/${orderId}` : null);
+  const url = href || (orderId ? `${env.UBEREATS_API_BASE_URL}/v2/eats/order/${orderId}` : null);
 
   if (!url) {
     throw new Error("Uber Eats webhook does not include resource_href or order id");

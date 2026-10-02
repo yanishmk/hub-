@@ -49,6 +49,7 @@ export async function scheduleUberAcceptanceCheck(payload: unknown): Promise<str
 }
 
 async function processUberAcceptanceCheck(job: Job<UberAcceptanceJobData>) {
+  console.log(`[ubereats-watch] checking ${job.data.orderId ?? job.data.resourceHref}`);
   const payload = await fetchUberEatsOrder({
     resource_href: job.data.resourceHref,
     meta: { resource_id: job.data.orderId },
@@ -59,6 +60,7 @@ async function processUberAcceptanceCheck(job: Job<UberAcceptanceJobData>) {
   }
 
   const normalized = ubereatsToNormalizedOrder(payload);
+  console.log(`[ubereats-watch] accepted ${normalized.externalId}, queueing for Cluster POS`);
   return enqueueOrder(normalized);
 }
 

@@ -136,6 +136,23 @@ describe("Uber Eats ingestion", () => {
     );
   });
 
+  it("fetches an order from the v2 Uber order endpoint when only the order id is present", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "token-1", expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(uberOrderPayload), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchUberEatsOrder({
+      event_type: "orders.notification",
+      meta: { resource_id: "uber-order-123" },
+    });
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "https://api.test/v2/eats/order/uber-order-123",
+      expect.objectContaining({ method: "GET" })
+    );
+  });
+
   it("accepts a signed webhook carrying full order details and enqueues it", async () => {
     const app = buildApp();
     const rawBody = JSON.stringify(uberOrderPayload);
