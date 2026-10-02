@@ -22,15 +22,24 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
     }
 
     const rawBody = (request as typeof request & { rawBody?: string }).rawBody ?? JSON.stringify(request.body ?? {});
-    if (!verifyUberEatsSignature(rawBody, request.headers["x-uber-signature"])) {
-      return reply.code(401).send({ error: "Invalid Uber Eats signature" });
-    }
-
     const body = request.body;
     const eventType = body && typeof body === "object"
       ? String((body as Record<string, unknown>).event_type ?? "")
       : "";
     const webhookOrderId = getUberEatsOrderId(body);
+    app.log.info(
+      {
+        eventType,
+        orderId: webhookOrderId,
+        hasSignature: Boolean(request.headers["x-uber-signature"]),
+      },
+      "Uber Eats webhook request received"
+    );
+    if (!verifyUberEatsSignature(rawBody, request.headers["x-uber-signature"])) {
+      app.log.warn({ eventType, orderId: webhookOrderId }, "Uber Eats webhook rejected: invalid signature");
+      return reply.code(401).send({ error: "Invalid Uber Eats signature" });
+    }
+
     app.log.info({ eventType, orderId: webhookOrderId }, "Uber Eats webhook received");
     if (eventType && !["orders.notification", "orders.scheduled.notification", "orders.release"].includes(eventType)) {
       app.log.info({ eventType, orderId: webhookOrderId }, "Uber Eats webhook event ignored");
