@@ -4,6 +4,7 @@ import { registerOrderRoutes } from "./routes/orders.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
 import { registerDashboardRoutes } from "./routes/dashboard.js";
 import { registerAnalyticsRoutes } from "./routes/analytics.js";
+import { registerDiagnosticsRoutes } from "./routes/diagnostics.js";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -43,6 +44,7 @@ export function buildApp(): FastifyInstance {
   app.register(registerWebhookRoutes);
   app.register(registerDashboardRoutes);
   app.register(registerAnalyticsRoutes);
+  app.register(registerDiagnosticsRoutes);
 
   return app;
 }
