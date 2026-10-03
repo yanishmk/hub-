@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { env } from "../lib/env.js";
+import { prisma } from "../lib/prisma.js";
 
 function safeHeaderEquals(header: string | string[] | undefined, expected: string): boolean {
   const value = Array.isArray(header) ? header[0] : header;
@@ -39,6 +40,21 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance) {
         databaseUrlConfigured: Boolean(env.DATABASE_URL),
       },
     });
+  });
+
+  app.get("/diagnostics/db", async (request, reply) => {
+    if (!requireAdminKey(request, reply)) return;
+
+    try {
+      const orderCount = await prisma.order.count();
+      return reply.send({ ok: true, orderCount });
+    } catch (err) {
+      request.log.error({ err }, "Database diagnostic failed");
+      return reply.code(500).send({
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   });
 }
 
