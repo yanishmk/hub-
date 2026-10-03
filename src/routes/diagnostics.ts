@@ -2,6 +2,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { env } from "../lib/env.js";
 import { prisma } from "../lib/prisma.js";
+import { orderQueue } from "../queue/orderQueue.js";
+import { redisConnection } from "../queue/connection.js";
 
 function safeHeaderEquals(header: string | string[] | undefined, expected: string): boolean {
   const value = Array.isArray(header) ? header[0] : header;
@@ -50,6 +52,29 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance) {
       return reply.send({ ok: true, orderCount });
     } catch (err) {
       request.log.error({ err }, "Database diagnostic failed");
+      return reply.code(500).send({
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
+
+  app.get("/diagnostics/queue", async (request, reply) => {
+    if (!requireAdminKey(request, reply)) return;
+
+    try {
+      const [redisPing, counts] = await Promise.all([
+        redisConnection.ping(),
+        orderQueue.getJobCounts("waiting", "active", "delayed", "failed", "completed"),
+      ]);
+
+      return reply.send({
+        ok: true,
+        redisPing,
+        counts,
+      });
+    } catch (err) {
+      request.log.error({ err }, "Queue diagnostic failed");
       return reply.code(500).send({
         ok: false,
         error: err instanceof Error ? err.message : String(err),

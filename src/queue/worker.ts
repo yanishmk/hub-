@@ -4,6 +4,7 @@ import { ORDER_QUEUE_NAME, type SendToClusterJobData } from "./orderQueue.js";
 import { prisma } from "../lib/prisma.js";
 import { sendOrderToCluster, ClusterPosError } from "../connectors/clusterPos.js";
 import { dbOrderToNormalizedOrder } from "../normalization/dbOrder.js";
+import { env } from "../lib/env.js";
 import "./uberAcceptanceQueue.js";
 
 const BASE_BACKOFF_MS = 2000;
@@ -23,8 +24,16 @@ export function clusterAwareBackoff(attemptsMade: number, _type?: string, err?: 
 }
 
 export async function processSendToCluster(job: Job<SendToClusterJobData>) {
+  return sendOrderToClusterById(job.data.orderId, job.attemptsMade + 1, job.opts.attempts ?? 1);
+}
+
+export async function sendOrderToClusterById(
+  orderId: string,
+  attemptNumber = 1,
+  maxAttempts = env.CLUSTER_MAX_RETRIES
+) {
   const dbOrder = await prisma.order.findUniqueOrThrow({
-    where: { id: job.data.orderId },
+    where: { id: orderId },
   });
 
   if (dbOrder.status === "cancelled") {
@@ -32,8 +41,6 @@ export async function processSendToCluster(job: Job<SendToClusterJobData>) {
   }
 
   const normalized = dbOrderToNormalizedOrder(dbOrder);
-  const attemptNumber = job.attemptsMade + 1;
-  const maxAttempts = job.opts.attempts ?? 1;
 
   try {
     const result = await sendOrderToCluster(normalized);
