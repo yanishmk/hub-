@@ -268,7 +268,7 @@ async function addClusterPayment(invoiceId: string, order: NormalizedOrder): Pro
       data: {
         Payment: {
           Method: "Internet",
-          Card_Number: "",
+          Card_Number: "WEB",
           Payment: order.total.toFixed(2),
           Tip: order.tip ?? 0,
           Balance: 0,
