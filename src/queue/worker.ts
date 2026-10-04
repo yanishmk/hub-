@@ -52,7 +52,9 @@ export async function sendOrderToClusterById(
           attemptNumber,
           success: true,
           statusCode: result.statusCode,
-          responseBody: result.rawResponse,
+          responseBody: result.paymentResponse
+            ? JSON.stringify({ sendOrder: result.rawResponse, addPayment: result.paymentResponse })
+            : result.rawResponse,
         },
       }),
       prisma.order.update({

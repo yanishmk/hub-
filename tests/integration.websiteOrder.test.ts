@@ -165,11 +165,15 @@ describe("website order end-to-end (through to the mocked Cluster POS call)", ()
     expect(persisted).toMatchObject({ status: "received", externalId: "web-e2e-001" });
 
     // 3. Le "worker" traite le job — appel HTTP vers Cluster POS mocké.
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ Invoice: "cluster-e2e-777", Status: 200, Message: "" }), {
-        status: 200,
-      })
-    );
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ Invoice: "cluster-e2e-777", Status: 200, Message: "" }), {
+          status: 200,
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ Status: 200, Message: "" }), { status: 200 })
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     const fakeJob = {
@@ -181,7 +185,9 @@ describe("website order end-to-end (through to the mocked Cluster POS call)", ()
 
     await processSendToCluster(fakeJob as unknown as import("bullmq").Job);
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/send-order");
+    expect(String(fetchMock.mock.calls[1][0])).toContain("/add-payment");
 
     const updated = await prisma.order.findUnique({ where: { id: enqueueResult.orderId } });
     expect(updated).toMatchObject({

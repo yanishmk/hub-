@@ -5,6 +5,7 @@ export interface ClusterOrderResult {
   statusCode: number;
   clusterOrderRef?: string;
   rawResponse: string;
+  paymentResponse?: string;
 }
 
 export class ClusterPosError extends Error {
@@ -240,9 +241,51 @@ export async function sendOrderToCluster(
     // Réponse non-JSON: on garde rawResponse tel quel pour debug.
   }
 
+  const paymentResponse = order.paymentStatus === "paid_externally" && clusterOrderRef
+    ? await addClusterPayment(clusterOrderRef, order)
+    : undefined;
+
   return {
     statusCode: response.status,
     clusterOrderRef,
     rawResponse,
+    paymentResponse,
   };
+}
+
+async function addClusterPayment(invoiceId: string, order: NormalizedOrder): Promise<string> {
+  const response = await fetch(`${env.CLUSTER_API_BASE_URL}/add-payment`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "x-serial": env.CLUSTER_SERIAL,
+      "x-apikey": env.CLUSTER_API_KEY,
+      Authorization: `Bearer ${env.CLUSTER_TOKEN}`,
+    },
+    body: JSON.stringify({
+      invoice_id: Number(invoiceId),
+      payment: {
+        Model: {
+          ID: 0,
+          Order_ID: Number(invoiceId),
+          Method: "Internet",
+          Payment: order.total,
+          Tip: order.tip ?? 0,
+          Balance: 0,
+          Message: orderSourceNote(order),
+        },
+      },
+    }),
+  });
+
+  const rawResponse = await response.text();
+  if (!response.ok) {
+    return JSON.stringify({
+      error: `Cluster POS add-payment returned ${response.status}`,
+      response: rawResponse,
+    });
+  }
+
+  return rawResponse;
 }

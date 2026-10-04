@@ -113,12 +113,16 @@ describe("sendOrderToCluster", () => {
   });
 
   it("uses a clean source message for online payments", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ Invoice: 1002, Status: 200, Message: "" }), { status: 200 })
-    );
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ Invoice: 1002, Status: 200, Message: "" }), { status: 200 })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ Status: 200, Message: "" }), { status: 200 })
+      );
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendOrderToCluster({
+    const result = await sendOrderToCluster({
       ...sampleOrder,
       externalId: "stripe-order-123",
       paymentStatus: "paid_externally",
@@ -127,6 +131,13 @@ describe("sendOrderToCluster", () => {
     const [, options] = fetchMock.mock.calls[0];
     const body = JSON.parse(options.body);
     expect(body.data.Cart.Payments[0].Model.Message).toBe("COMMANDE CREPONE.CA");
+    const [paymentUrl, paymentOptions] = fetchMock.mock.calls[1];
+    expect(paymentUrl).toContain("/add-payment");
+    const paymentBody = JSON.parse(paymentOptions.body);
+    expect(paymentBody.invoice_id).toBe(1002);
+    expect(paymentBody.payment.Model.Method).toBe("Internet");
+    expect(paymentBody.payment.Model.Message).toBe("COMMANDE CREPONE.CA");
+    expect(result.paymentResponse).toContain("Status");
   });
 
   it("includes item notes in the Cluster item payload", async () => {
