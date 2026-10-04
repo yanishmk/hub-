@@ -134,9 +134,9 @@ describe("sendOrderToCluster", () => {
     const [paymentUrl, paymentOptions] = fetchMock.mock.calls[1];
     expect(paymentUrl).toContain("/add-payment");
     const paymentBody = JSON.parse(paymentOptions.body);
-    expect(paymentBody.invoice_id).toBe(1002);
-    expect(paymentBody.payment.Model.Method).toBe("Internet");
-    expect(paymentBody.payment.Model.Message).toBe("COMMANDE CREPONE.CA");
+    expect(paymentBody.order_id).toBe(1002);
+    expect(paymentBody.data.Payment.Method).toBe("Internet");
+    expect(paymentBody.data.Payment.Message).toBe("COMMANDE CREPONE.CA");
     expect(result.paymentResponse).toContain("Status");
   });
 

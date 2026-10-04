@@ -264,16 +264,18 @@ async function addClusterPayment(invoiceId: string, order: NormalizedOrder): Pro
       Authorization: `Bearer ${env.CLUSTER_TOKEN}`,
     },
     body: JSON.stringify({
-      invoice_id: Number(invoiceId),
-      payment: {
-        Model: {
-          ID: 0,
-          Order_ID: Number(invoiceId),
+      order_id: Number(invoiceId),
+      data: {
+        Payment: {
           Method: "Internet",
-          Payment: order.total,
+          Card_Number: "",
+          Payment: order.total.toFixed(2),
           Tip: order.tip ?? 0,
           Balance: 0,
+          Language: 0,
+          Date: new Date().toISOString(),
           Message: orderSourceNote(order),
+          Approval_Code: "WEB",
         },
       },
     }),
