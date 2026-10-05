@@ -35,6 +35,7 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance) {
         clientId: secretInfo(env.UBEREATS_CLIENT_ID),
         webhookSigningSecret: secretInfo(env.UBEREATS_WEBHOOK_SIGNING_SECRET),
         clientSecret: secretInfo(env.UBEREATS_CLIENT_SECRET),
+        oauthScope: env.UBEREATS_OAUTH_SCOPE,
       },
       worker: {
         startWorkerInProcess: env.START_WORKER_IN_PROCESS,
