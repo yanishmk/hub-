@@ -19,23 +19,30 @@ export function verifyUberEatsSignature(
   const signature = Array.isArray(signatureHeader)
     ? signatureHeader[0]
     : signatureHeader;
-  const secret = env.UBEREATS_WEBHOOK_SIGNING_SECRET || env.UBEREATS_CLIENT_SECRET;
+  const secrets = [
+    env.UBEREATS_WEBHOOK_SIGNING_SECRET,
+    env.UBEREATS_CLIENT_SECRET,
+  ].filter((secret): secret is string => Boolean(secret));
 
-  if (!secret || !signature) {
+  if (!secrets.length || !signature) {
     return false;
   }
 
-  const expected = createHmac("sha256", secret)
-    .update(rawBody)
-    .digest("hex")
-    .toLowerCase();
   const received = signature.trim().toLowerCase().replace(/^sha256=/, "");
 
   if (!/^[a-f0-9]{64}$/.test(received)) {
     return false;
   }
 
-  return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(received, "hex"));
+  const receivedBuffer = Buffer.from(received, "hex");
+  return secrets.some((secret) => {
+    const expected = createHmac("sha256", secret)
+      .update(rawBody)
+      .digest("hex")
+      .toLowerCase();
+
+    return timingSafeEqual(Buffer.from(expected, "hex"), receivedBuffer);
+  });
 }
 
 export function getUberEatsOrderId(payload: unknown): string | null {

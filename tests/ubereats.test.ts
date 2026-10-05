@@ -80,8 +80,12 @@ describe("Uber Eats ingestion", () => {
     const signature = createHmac("sha256", "uber-webhook-secret")
       .update(rawBody)
       .digest("hex");
+    const clientSecretSignature = createHmac("sha256", "uber-client-secret")
+      .update(rawBody)
+      .digest("hex");
 
     expect(verifyUberEatsSignature(rawBody, signature)).toBe(true);
+    expect(verifyUberEatsSignature(rawBody, clientSecretSignature)).toBe(true);
     expect(verifyUberEatsSignature(rawBody, "0".repeat(64))).toBe(false);
   });
 
