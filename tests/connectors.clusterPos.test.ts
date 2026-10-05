@@ -130,7 +130,7 @@ describe("sendOrderToCluster", () => {
 
     const [, options] = fetchMock.mock.calls[0];
     const body = JSON.parse(options.body);
-    expect(body.data.Cart.Payments[0].Model.Message).toBe("COMMANDE CREPONE.CA");
+    expect(body.data.Cart.Payments).toBeUndefined();
     const [paymentUrl, paymentOptions] = fetchMock.mock.calls[1];
     expect(paymentUrl).toContain("/add-payment");
     const paymentBody = JSON.parse(paymentOptions.body);

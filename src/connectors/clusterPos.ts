@@ -102,22 +102,6 @@ export function buildClusterPayload(order: NormalizedOrder): Record<string, unkn
   // Commande déjà payée en ligne: on informe Cluster du paiement pour que la
   // facture ne soit pas ouverte "à payer" au terminal. Si le client paie sur
   // place (pay_at_pos), on n'envoie aucun Payments et le terminal encaissera.
-  if (order.paymentStatus === "paid_externally") {
-    cart.Payments = [
-      {
-        Model: {
-          ID: 0,
-          Order_ID: 0,
-          Method: "ONLINE_ORDERING",
-          Payment: order.total,
-          Tip: order.tip ?? 0,
-          Balance: 0,
-          Message: orderSourceNote(order),
-        },
-      },
-    ];
-  }
-
   const data: Record<string, unknown> = {
     Time: order.requestedFor ?? order.createdAt,
     Client: {
