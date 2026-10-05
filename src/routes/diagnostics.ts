@@ -31,6 +31,7 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance) {
         enabled: env.UBEREATS_ENABLED,
         autoAccept: env.UBEREATS_AUTO_ACCEPT,
         manualAcceptPollEnabled: env.UBEREATS_MANUAL_ACCEPT_POLL_ENABLED,
+        clientId: secretInfo(env.UBEREATS_CLIENT_ID),
         webhookSigningSecret: secretInfo(env.UBEREATS_WEBHOOK_SIGNING_SECRET),
         clientSecret: secretInfo(env.UBEREATS_CLIENT_SECRET),
       },
