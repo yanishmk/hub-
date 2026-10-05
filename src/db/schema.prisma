@@ -86,3 +86,25 @@ model ClusterDeliveryAttempt {
 
   @@index([orderId])
 }
+
+// Journal persistant des webhooks externes reÃ§us par le hub.
+// Sert Ã  diagnostiquer les livraisons Uber qui n'arrivent pas jusqu'aux commandes.
+model WebhookDelivery {
+  id                             String   @id @default(cuid())
+  provider                       String
+  eventType                      String?
+  externalOrderId                String?
+  status                         String
+  reason                         String?
+  httpStatus                     Int?
+  hasSignature                   Boolean  @default(false)
+  hasSecondarySignature          Boolean  @default(false)
+  signatureValid                 Boolean?
+  rawBodyHash                    String?
+  errorMessage                   String?
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+
+  @@index([provider, createdAt])
+  @@index([externalOrderId])
+}

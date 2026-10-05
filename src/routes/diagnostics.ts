@@ -82,6 +82,26 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance) {
       });
     }
   });
+
+  app.get("/diagnostics/webhooks/ubereats", async (request, reply) => {
+    if (!requireAdminKey(request, reply)) return;
+
+    try {
+      const deliveries = await prisma.webhookDelivery.findMany({
+        where: { provider: "ubereats" },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+
+      return reply.send({ deliveries });
+    } catch (err) {
+      request.log.error({ err }, "Uber Eats webhook diagnostic failed");
+      return reply.code(500).send({
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
 }
 
 function secretInfo(value: string) {
