@@ -4,6 +4,7 @@ import { env } from "../lib/env.js";
 import { prisma } from "../lib/prisma.js";
 import { orderQueue } from "../queue/orderQueue.js";
 import { redisConnection } from "../queue/connection.js";
+import { checkUberEatsOAuthCredentials } from "../ingestion/ubereats.js";
 
 function safeHeaderEquals(header: string | string[] | undefined, expected: string): boolean {
   const value = Array.isArray(header) ? header[0] : header;
@@ -96,6 +97,21 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance) {
       return reply.send({ deliveries });
     } catch (err) {
       request.log.error({ err }, "Uber Eats webhook diagnostic failed");
+      return reply.code(500).send({
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
+
+  app.get("/diagnostics/ubereats/oauth", async (request, reply) => {
+    if (!requireAdminKey(request, reply)) return;
+
+    try {
+      const result = await checkUberEatsOAuthCredentials();
+      return reply.send(result);
+    } catch (err) {
+      request.log.error({ err }, "Uber Eats OAuth diagnostic failed");
       return reply.code(500).send({
         ok: false,
         error: err instanceof Error ? err.message : String(err),

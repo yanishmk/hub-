@@ -138,6 +138,52 @@ export async function acceptUberEatsOrder(orderId: string): Promise<void> {
   }
 }
 
+export async function checkUberEatsOAuthCredentials(): Promise<{
+  ok: true;
+  expiresIn: number | null;
+  tokenType: string | null;
+} | {
+  ok: false;
+  statusCode: number | null;
+  error: string;
+}> {
+  if (!env.UBEREATS_CLIENT_ID || !env.UBEREATS_CLIENT_SECRET) {
+    return {
+      ok: false,
+      statusCode: null,
+      error: "Uber Eats credentials are missing",
+    };
+  }
+
+  const body = new URLSearchParams({
+    client_id: env.UBEREATS_CLIENT_ID,
+    client_secret: env.UBEREATS_CLIENT_SECRET,
+    grant_type: "client_credentials",
+    scope: env.UBEREATS_OAUTH_SCOPE,
+  });
+  const response = await fetch(env.UBEREATS_AUTH_URL, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const text = await response.text();
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      statusCode: response.status,
+      error: text,
+    };
+  }
+
+  const token = JSON.parse(text) as { expires_in?: number; token_type?: string };
+  return {
+    ok: true,
+    expiresIn: typeof token.expires_in === "number" ? token.expires_in : null,
+    tokenType: typeof token.token_type === "string" ? token.token_type : null,
+  };
+}
+
 async function getUberEatsAccessToken(): Promise<string> {
   const now = Date.now();
   if (cachedToken && cachedToken.expiresAt > now + 60_000) {
