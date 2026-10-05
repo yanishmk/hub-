@@ -32,10 +32,14 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
         eventType,
         orderId: webhookOrderId,
         hasSignature: Boolean(request.headers["x-uber-signature"]),
+        hasNewSignature: Boolean(request.headers["x-uber-signature-new"]),
       },
       "Uber Eats webhook request received"
     );
-    if (!verifyUberEatsSignature(rawBody, request.headers["x-uber-signature"])) {
+    if (!verifyUberEatsSignature(rawBody, [
+      request.headers["x-uber-signature"],
+      request.headers["x-uber-signature-new"],
+    ].flat().filter((header): header is string => Boolean(header)))) {
       app.log.warn({ eventType, orderId: webhookOrderId }, "Uber Eats webhook rejected: invalid signature");
       return reply.code(401).send({ error: "Invalid Uber Eats signature" });
     }

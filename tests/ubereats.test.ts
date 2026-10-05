@@ -183,6 +183,35 @@ describe("Uber Eats ingestion", () => {
     await app.close();
   });
 
+  it("accepts the secondary Uber signature header", async () => {
+    const app = buildApp();
+    const rawBody = JSON.stringify({
+      ...uberOrderPayload,
+      id: "uber-order-secondary-signature",
+    });
+    const signature = createHmac("sha256", "uber-client-secret")
+      .update(rawBody)
+      .digest("hex");
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/webhooks/ubereats",
+      headers: {
+        "content-type": "application/json",
+        "x-uber-signature-new": signature,
+      },
+      payload: rawBody,
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ orderId: "order-db-1", duplicate: false });
+    expect(enqueueOrder).toHaveBeenCalledWith(expect.objectContaining({
+      externalId: "uber-order-secondary-signature",
+      source: "ubereats",
+    }));
+    await app.close();
+  });
+
   it("watches an Uber order until it is accepted manually", async () => {
     const app = buildApp();
     const rawBody = JSON.stringify({
